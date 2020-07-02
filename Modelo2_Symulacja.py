@@ -1,9 +1,3 @@
-#!/usr/bin/env python
-# coding: utf-8
-
-# In[4]:
-
-
 from matplotlib import pyplot as plt
 import numpy as np
 
@@ -103,50 +97,91 @@ class atom:
 
 
 class simulation:
-    def __init__(self, steps, dt):
+    def __init__(self, atom, steps, dt):
         self.steps = steps
         self.dt = dt
+        self.atom = atom
         
-    def do_simulation(self, atom, type = 'V'):
+    def do_simulation(self, type = 'V'):
+        X = np.empty((self.steps,2))
+        Energy = np.empty((self.steps,3))
+        for step in range(self.steps):
+
+            if type == 'E':
+                for i in range(self.steps):
+                    next_x = self.atom.Euler_next(self.dt)
+                    E = self.atom.E()
+                    if (i%100 == 0):
+                        X[step][0] = next_x[0][0]
+                        X[step][1] = next_x[0][1]
+                        Energy[step][0] = E[0]
+                        Energy[step][1] = E[1]
+                        Energy[step][2] = E[2]
+            
+            elif type == 'LF':
+                for i in range(self.steps):
+                    next_x = self.atom.LF_next(self.dt)
+                    E = self.atom.E()
+                    if (i%100 == 0):
+                        X[step][0] = next_x[0][0]
+                        X[step][1] = next_x[0][1]
+                        Energy[step][0] = E[0]
+                        Energy[step][1] = E[1]
+                        Energy[step][2] = E[2]
+            
+            elif type == 'V':
+                for i in range(self.steps):
+                    next_x = self.atom.Verlet_next(self.dt)
+                    E = self.atom.E()
+                    if (i%100 == 0):
+                        X[step][0] = next_x[0][0]
+                        X[step][1] = next_x[0][1]
+                        Energy[step][0] = E[0]
+                        Energy[step][1] = E[1]
+                        Energy[step][2] = E[2]
         
-        if type == 'E':
-            for i in range(self.steps):
-                next_x = atom.Euler_next(self.dt)
-                if (i%100 == 0):
-                    plt.scatter(next_x[0][0], next_x[0][1])
-        
-        elif type == 'LF':
-            for i in range(self.steps):
-                next_x = atom.LF_next(self.dt)
-                if (i%100 == 0):
-                    plt.scatter(next_x[0][0], next_x[0][1])
-        
-        elif type == 'V':
-            for i in range(self.steps):
-                next_x = atom.Verlet_next(self.dt)
-                if (i%50 == 0):
-                    plt.scatter(next_x[0][0], next_x[0][1],marker=r'$\clubsuit$')
-                    path = 'C:/Users/wojte/Desktop/obrazki/' + str(i) +'abc.png'
-                    plt.savefig(path)
-        return True
+        return X, Energy
 
 
-# In[15]:
+def save_frames(simulation, steps, prefix, skip=10):
+    X = simulation.do_simulation()[0]
+    k = 0
+    for i in range(steps):
+        plt.axis([-2, 2, -2, 2])
+        plt.scatter(x=0,y=0,c='black')
+        plt.scatter(x=X[i,0],y=X[i,1],c='blue')
+        plt.savefig('./frames/'+prefix+'_{:05d}.png'.format(k), bbox_inches='tight', pad_inches=0., dpi=300)
+        plt.close() 
+        k += 1
 
+def save_energy(simulation, steps, path):
+    E = simulation.do_simulation()[1]
+
+    fig, axs = plt.subplots(3, 1, figsize=(9, 9), sharex=True)
+    axs[0].plot(E[:][0])
+    axs[0].set_title('Energia kinetyczna')
+    axs[1].plot(E[:][1])
+    axs[1].set_title('Energia potencjalna')
+    axs[2].plot(E[:][2])
+    axs[2].set_title('Energia calkowita')
+    
+    plt.show()
+    plt.savefig(path, bbox_inches='tight', pad_inches=0., dpi=300)
+    plt.close() 
 
 A = atom([0,1], [1,0], 0.1)
-S = simulation(10000, 0.001)
-S.do_simulation(A, 'V')
+S = simulation(A, 100, 0.01)
+S.do_simulation('V')
 
+save_frames(S,100,'V')
+save_energy(S,10000,'energiaV.png')
 
-# In[150]:
+S.do_simulation('E')
 
+save_frames(S,100,'E')
+save_energy(S,10000,'energiaE.png')
 
+S.do_simulation('LF')
 
-
-
-# In[ ]:
-
-
-
-
+save_frames(S,100,'LF')
+save_energy(S,10000,'energiaLF.png')
